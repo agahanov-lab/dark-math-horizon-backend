@@ -9,8 +9,47 @@ dotenv.config();
 
 const app = express();
 
+// MongoDB Connection with enhanced error handling
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      retryWrites: true,
+      w: 'majority'
+    });
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    
+    // Handle connection errors after initial connection
+    mongoose.connection.on('error', err => {
+      console.error('MongoDB connection error:', err);
+    });
+
+    mongoose.connection.on('disconnected', () => {
+      console.log('MongoDB disconnected. Attempting to reconnect...');
+    });
+
+    mongoose.connection.on('reconnected', () => {
+      console.log('MongoDB reconnected');
+    });
+
+  } catch (error) {
+    console.error('Error connecting to MongoDB:', error);
+    // Wait 5 seconds before retrying
+    console.log('Retrying connection in 5 seconds...');
+    setTimeout(connectDB, 5000);
+  }
+};
+
+connectDB();
+
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN,
+  credentials: true
+}));
 app.use(express.json());
 
 // Serve uploaded files
