@@ -47,7 +47,23 @@ connectDB();
 
 // Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN,
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      'http://localhost:5173',  // Local development
+      'https://agahanov.netlify.app',  // Production
+      'https://dark-math-horizon.netlify.app'  // New production domain
+    ];
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,  // Allow credentials (cookies, authorization headers, etc)
   credentials: true
 }));
 app.use(express.json());
